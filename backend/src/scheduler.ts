@@ -3,7 +3,7 @@ import { runCheck, type ServiceType } from './checker.js';
 import { sendTelegram } from './telegram.js';
 import { serviceUp, checkLatency } from './metrics.js';
 
-interface ServiceRow {
+export interface ServiceRow {
   id: number;
   name: string;
   type: ServiceType;
@@ -16,7 +16,7 @@ export async function checkAll(): Promise<void> {
   await Promise.all(rows.map(checkOne));
 }
 
-async function checkOne(svc: ServiceRow): Promise<void> {
+export async function checkOne(svc: ServiceRow): Promise<void> {
   const result = await runCheck({ type: svc.type, target: svc.target });
   await pool.query(
     'INSERT INTO checks (service_id, up, latency_ms, error) VALUES ($1,$2,$3,$4)',

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from './db.js';
 import { registry } from './metrics.js';
 import { parseHostPort } from './checker.js';
+import { checkOne } from './scheduler.js';
 
 const serviceSchema = z
   .object({
@@ -34,7 +35,14 @@ export function buildApp(): FastifyInstance {
   });
 
   app.get('/api/services', async () => {
-    const { rows } = await pool.query('SELECT * FROM services ORDER BY name');
+    const { rows } = await pool.query(`
+      SELECT s.*, c.latency_ms, c.error, c.checked_at AS last_checked
+      FROM services s
+      LEFT JOIN LATERAL (
+        SELECT latency_ms, error, checked_at FROM checks
+        WHERE service_id = s.id ORDER BY checked_at DESC LIMIT 1
+      ) c ON true
+      ORDER BY s.name`);
     return rows;
   });
 
@@ -47,6 +55,7 @@ export function buildApp(): FastifyInstance {
         'INSERT INTO services (name, type, target) VALUES ($1,$2,$3) RETURNING *',
         [name, type, target],
       );
+      void checkOne(rows[0]).catch((e) => app.log.error(e));
       return reply.code(201).send(rows[0]);
     } catch (err) {
       if ((err as { code?: string }).code === '23505') {
