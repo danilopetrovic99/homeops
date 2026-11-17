@@ -17,6 +17,10 @@ RUN npm ci --omit=dev
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
+# npm/yarn are not needed at runtime; removing them drops their bundled CVEs
+RUN apk upgrade --no-cache \
+ && rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx \
+           /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json ./
