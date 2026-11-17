@@ -1,0 +1,44 @@
+# Production stack: pulls prebuilt images from GHCR (no local build).
+# Usage: TAG=v0.1.0 docker compose -f docker-compose.prod.yml up -d
+name: homeops
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: homeops
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-homeops}
+      POSTGRES_DB: homeops
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U homeops"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    image: ghcr.io/danilopetrovic99/homeops-backend:${TAG:?TAG is required}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://homeops:${POSTGRES_PASSWORD:-homeops}@db:5432/homeops
+      CHECK_INTERVAL_SECONDS: ${CHECK_INTERVAL_SECONDS:-30}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    ports:
+      - "3000:3000"
+
+  frontend:
+    image: ghcr.io/danilopetrovic99/homeops-frontend:${TAG:?TAG is required}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

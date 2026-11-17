@@ -82,3 +82,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker compose config -q
+      - run: TAG=ci docker compose -f docker-compose.prod.yml config -q

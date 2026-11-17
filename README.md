@@ -46,11 +46,21 @@ npm run dev        # potreban Postgres (DATABASE_URL)
 npm test && npm run lint && npm run typecheck
 ```
 
+## CD (release i deploy)
+
+1. **Self-hosted runner** na mašini gde se vrti app (GitHub → Settings → Actions → Runners → New self-hosted runner), sa labelom `homelab`. Docker mora da radi na toj mašini.
+2. **Secrets** (Settings → Secrets and variables → Actions): `POSTGRES_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (opciono).
+3. **Release**: `git tag v0.1.0 && git push origin v0.1.0`
+   - build + Trivy scan + push na `ghcr.io/danilopetrovic99/homeops-{backend,frontend}`
+   - deploy na runner (`docker-compose.prod.yml`) uz health check
+4. **Rollback**: Actions → Deploy → Run workflow → upiši stari tag (npr. `v0.1.0`).
+
 ## Plan
 
 - [x] Faza 1–2: backend, Docker, Compose
-- [ ] Frontend (React + Vite)
-- [ ] Faza 3: CI (GitHub Actions)
-- [ ] Faza 4: CD (GHCR + deploy)
+- [x] Frontend (React + Vite)
+- [x] Faza 3: CI (GitHub Actions)
+- [x] Faza 4: CD (GHCR + deploy)
 - [ ] Faza 5: Prometheus + Grafana
 - [ ] Faza 6: Terraform
+
